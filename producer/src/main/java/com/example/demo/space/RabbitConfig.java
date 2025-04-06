@@ -1,5 +1,6 @@
 package com.example.demo.space;
 
+import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
@@ -10,6 +11,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.retry.backoff.ExponentialBackOffPolicy;
 import org.springframework.retry.support.RetryTemplate;
+
+import static com.example.demo.space.RabbitNames.*;
 
 @Configuration
 public class RabbitConfig {
@@ -52,5 +55,39 @@ public class RabbitConfig {
     @Bean
     public Jackson2JsonMessageConverter producerJackson2MessageConverter() {
         return new Jackson2JsonMessageConverter();
+    }
+
+    @Bean
+    public Queue mainQueue() {
+        return QueueBuilder.durable(JURIDIC_ENTITY)
+                .ttl(10_000)
+                .withArgument("x-dead-letter-exchange", DELAY_EXCHANGE_DLX)
+                .withArgument("x-dead-letter-routing-key", JURIDIC_PAYMENT_KEY_DLX)
+                .build();
+    }
+
+    @Bean
+    public DirectExchange mainExchange() {
+        return new DirectExchange(DELAY_EXCHANGE);
+    }
+
+    @Bean
+    public Binding mainBinding() {
+        return BindingBuilder.bind(mainQueue()).to(mainExchange()).with(JURIDIC_PAYMENT_KEY);
+    }
+
+    @Bean
+    public Queue dlq() {
+        return QueueBuilder.durable(JURIDIC_ENTITY_DLQ).build();
+    }
+
+    @Bean
+    public DirectExchange dlxExchange() {
+        return new DirectExchange(DELAY_EXCHANGE_DLX);
+    }
+
+    @Bean
+    public Binding dlqBinding() {
+        return BindingBuilder.bind(dlq()).to(dlxExchange()).with(JURIDIC_PAYMENT_KEY_DLX);
     }
 }
