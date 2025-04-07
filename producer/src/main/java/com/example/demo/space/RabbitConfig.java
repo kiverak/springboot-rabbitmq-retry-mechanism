@@ -12,6 +12,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.retry.backoff.ExponentialBackOffPolicy;
 import org.springframework.retry.support.RetryTemplate;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static com.example.demo.space.RabbitNames.*;
 
 @Configuration
@@ -58,8 +61,13 @@ public class RabbitConfig {
     }
 
     @Bean
+    public Queue queueJuridicEntity() {
+        return new Queue(RabbitNames.JURIDIC_ENTITY);
+    }
+
+    @Bean
     public Queue mainQueue() {
-        return QueueBuilder.durable(JURIDIC_ENTITY)
+        return QueueBuilder.durable(JURIDIC_ENTITY_WITH_DLQ)
                 .ttl(10_000)
                 .withArgument("x-dead-letter-exchange", DELAY_EXCHANGE_DLX)
                 .withArgument("x-dead-letter-routing-key", JURIDIC_PAYMENT_KEY_DLX)
@@ -67,13 +75,18 @@ public class RabbitConfig {
     }
 
     @Bean
-    public DirectExchange mainExchange() {
+    public DirectExchange delayExchange() {
         return new DirectExchange(DELAY_EXCHANGE);
     }
 
     @Bean
+    public Binding bindJuridicEntity(Queue queueJuridicEntity, Exchange delayExchange) {
+        return BindingBuilder.bind(queueJuridicEntity).to(delayExchange).with(RabbitNames.JURIDIC_PAYMENT_KEY).noargs();
+    }
+
+    @Bean
     public Binding mainBinding() {
-        return BindingBuilder.bind(mainQueue()).to(mainExchange()).with(JURIDIC_PAYMENT_KEY);
+        return BindingBuilder.bind(mainQueue()).to(delayExchange()).with(JURIDIC_PAYMENT_KEY);
     }
 
     @Bean

@@ -3,6 +3,7 @@ package com.example.demo.space;
 public class RabbitNames {
 
     public static final String JURIDIC_ENTITY = "report_juridic_entity";
+    public static final String JURIDIC_ENTITY_WITH_DLQ = "report_juridic_entity_with_dlq";
     public static final String JURIDIC_ENTITY_DLQ = "report_juridic_entity_dlq";
     public static final String DELAY_EXCHANGE = "delay_report_juridic_exchange";
     public static final String DELAY_EXCHANGE_DLX = "delay_report_juridic_exchange_dlx";
